@@ -4,6 +4,18 @@ const { GameState } = require('../models/gameState');
 const mongoose = require('mongoose')
 const { default: jwtDecode } = require("jwt-decode");
 
+router.get('/prev-state', async (req, res) => {
+    try {
+        const token = req.header('auth-token')
+		const user = jwtDecode(token)
+        let gameState = await GameState.findOne({ email: user.email }, { state: 1, turns: 1, id: 1,  _id: -1 })
+        return res.status(200).json({ gameState })
+    } catch (err) {
+        console.log(err)
+        return res.status(200).json({ message: "errorrrr!!!!" })
+    }
+})
+
 router.post('/save-state', async (req, res) => {
     try {
         const token = req.header('auth-token')
@@ -14,15 +26,17 @@ router.post('/save-state', async (req, res) => {
         if(state.length == 12 && completed) {
             await GameState.deleteOne({ email: user.email });
             let _user = await User.findOne({ email: user.email });
-            if(_user.highScore == -1 || _user.highScore > turns) {
+            if(_user.highScore == -1 || _user.highScore > turns)
                await User.updateOne({ email: user.email }, { highScore: turns })
-            }
-        } else
-            await GameState.findOneAndUpdate({ email: user.email }, { state: state, turns: turns }, { upsert: true });
-        console.log("save state...")
-        return res.status(200).json({
-            message: 'success'
-        })
+               return res.status(200).json({
+                message: 'success',
+                gameState: null
+               })
+        } else {
+            let gameState = await GameState.findOneAndUpdate({ email: user.email }, { state: state, turns: turns }, { upsert: true, new : true });
+            return res.status(200).json({gameState})
+        }
+
     } catch (err) {
         console.log("save-state ", err);
         return res.status(500).json({
@@ -30,6 +44,7 @@ router.post('/save-state', async (req, res) => {
         })
     }
 });
+
 
 router.post('/save-turns', async (req, res) => {
     try {
