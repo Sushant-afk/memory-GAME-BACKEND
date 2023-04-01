@@ -14,12 +14,12 @@ router.get("/login", async (req, res) => {
 		let user1 = await User.findOne({ email: email });
 		if(!user1) {
 			user1 = new User({
-				name: user.displayName,
+				name: user.name,
 				email: user.email,
 				highScore: -1
 			})
-			user1 = new User(user1);
 			await user1.save();
+			// console.
 		}
 		let gameState = await GameState.findOne({ email: user.email}, { state: 1, turns: 1 })
 		return res.status(200).json({
